@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<addon scheme="3.0">
+    <id>vendor_payouts</id>
+    <version>1.0</version>
+    <priority>100</priority>
+    <position>100</position>
+    <status>active</status>
+    <has_icon>Y</has_icon>
+    <default_language>en</default_language>
+    <auto_install>MULTIVENDOR</auto_install>
+    
+    <settings edition_type="ROOT">
+        <sections>
+            <section id="general">
+                <items>
+                    <item id="encryption_key">
+                        <type>text</type>
+                        <default_value></default_value>
+                    </item>
+                    <item id="require_verification">
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="minimum_payout">
+                        <type>text</type>
+                        <default_value>100</default_value>
+                    </item>
+                </items>
+            </section>
+        </sections>
+    </settings>
+
+    <queries>
+        <item for="install">
+            CREATE TABLE ?:vendor_bank_details (
+                detail_id int(11) unsigned NOT NULL auto_increment,
+                vendor_id int(11) unsigned NOT NULL,
+                bank_name varchar(255) NOT NULL,
+                account_holder varchar(255) NOT NULL,
+                account_number varchar(255) NOT NULL,
+                swift_code varchar(50) NOT NULL,
+                iban varchar(50) DEFAULT NULL,
+                branch_name varchar(255) NOT NULL,
+                bank_address text NOT NULL,
+                status char(1) NOT NULL default 'P',
+                created_at int(11) unsigned NOT NULL,
+                updated_at int(11) unsigned NOT NULL,
+                verified_at int(11) unsigned DEFAULT NULL,
+                verified_by int(11) unsigned DEFAULT NULL,
+                verification_notes text DEFAULT NULL,
+                PRIMARY KEY (detail_id),
+                KEY vendor_id (vendor_id),
+                KEY status (status)
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_bank_details;</item>
+    </queries>
+
+    <functions>
+        <item for="install">fn_vendor_payouts_install</item>
+        <item for="uninstall">fn_vendor_payouts_uninstall</item>
+    </functions>
+</addon>
