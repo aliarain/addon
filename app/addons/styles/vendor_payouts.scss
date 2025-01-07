@@ -1,0 +1,25 @@
+.dashboard-card {
+    &.vendor-payouts {
+        .dashboard-balance {
+            font-size: 24px;
+            font-weight: bold;
+            color: $success;
+            margin: 15px 0;
+        }
+
+        .payout-status {
+            &.status-P { color: $warning; }
+            &.status-C { color: $success; }
+            &.status-F { color: $danger; }
+        }
+    }
+}
+
+.payout-request-form {
+    max-width: 500px;
+    margin: 20px auto;
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+} 

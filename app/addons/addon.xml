@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<addon scheme="3.0">
+    <id>vendor_payouts</id>
+    <version>1.0</version>
+    <priority>100</priority>
+    <position>0</position>
+    <status>active</status>
+    <has_icon>Y</has_icon>
+    <default_language>en</default_language>
+    <auto_install>MULTIVENDOR</auto_install>
+    
+    <settings>
+        <sections>
+            <section id="general">
+                <items>
+                    <item id="encryption_key">
+                        <type>text</type>
+                        <default_value></default_value>
+                    </item>
+                    <item id="require_verification">
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="minimum_payout">
+                        <type>text</type>
+                        <default_value>100</default_value>
+                    </item>
+                    <item id="auto_payout">
+                        <type>checkbox</type>
+                        <default_value>N</default_value>
+                    </item>
+                </items>
+            </section>
+            <section id="payout_rules">
+                <name>Payout Rules</name>
+                <items>
+                    <item id="minimum_balance">
+                        <name>Minimum balance required</name>
+                        <type>text</type>
+                        <default_value>0.00</default_value>
+                    </item>
+                    <item id="grace_period_days">
+                        <name>Grace period (days)</name>
+                        <type>text</type>
+                        <default_value>7</default_value>
+                    </item>
+                    <item id="tax_type">
+                        <name>Tax type</name>
+                        <type>selectbox</type>
+                        <default_value>VAT</default_value>
+                        <variants>
+                            <item id="VAT">VAT</item>
+                            <item id="GST">GST</item>
+                            <item id="CUSTOM">Custom</item>
+                        </variants>
+                    </item>
+                </items>
+            </section>
+            <section id="suspension">
+                <name>Suspension Settings</name>
+                <items>
+                    <item id="hide_products">
+                        <name>Hide products of suspended vendors</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="block_admin">
+                        <name>Block admin panel of suspended vendors</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="disable_vendor">
+                        <name>Disable suspended vendors after grace period</name>
+                        <type>checkbox</type>
+                        <default_value>N</default_value>
+                    </item>
+                </items>
+            </section>
+        </sections>
+    </settings>
+
+    <queries>
+        <!-- Bank Details Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:vendor_bank_details (
+                detail_id int(11) unsigned NOT NULL auto_increment,
+                vendor_id int(11) unsigned NOT NULL,
+                bank_name varchar(255) NOT NULL,
+                account_holder varchar(255) NOT NULL,
+                account_number varchar(255) NOT NULL,
+                swift_code varchar(50) NOT NULL,
+                iban varchar(50) DEFAULT NULL,
+                branch_name varchar(255) NOT NULL,
+                bank_address text NOT NULL,
+                status char(1) NOT NULL default 'P',
+                is_default char(1) NOT NULL default 'N',
+                created_at int(11) unsigned NOT NULL,
+                updated_at int(11) unsigned NOT NULL,
+                verified_at int(11) unsigned DEFAULT NULL,
+                verified_by int(11) unsigned DEFAULT NULL,
+                verification_notes text DEFAULT NULL,
+                PRIMARY KEY (detail_id),
+                KEY vendor_id (vendor_id),
+                KEY status (status)
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
+        <!-- Payouts Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:vendor_payouts (
+                payout_id int(11) unsigned NOT NULL auto_increment,
+                vendor_id int(11) unsigned NOT NULL,
+                bank_details_id int(11) unsigned NOT NULL,
+                payout_amount decimal(12,2) NOT NULL default '0.00',
+                status char(1) NOT NULL default 'P',
+                notes text,
+                created_at int(11) unsigned NOT NULL,
+                processed_at int(11) unsigned DEFAULT NULL,
+                processed_by int(11) unsigned DEFAULT NULL,
+                PRIMARY KEY (payout_id),
+                KEY vendor_id (vendor_id),
+                KEY status (status),
+                KEY bank_details_id (bank_details_id),
+                CONSTRAINT fk_bank_details 
+                    FOREIGN KEY (bank_details_id) 
+                    REFERENCES ?:vendor_bank_details(detail_id)
+                    ON DELETE RESTRICT
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
+        <!-- Cleanup on uninstall -->
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_payouts;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_bank_details;</item>
+    </queries>
+
+    <functions>
+        <item for="install">fn_vendor_payouts_install</item>
+        <item for="uninstall">fn_vendor_payouts_uninstall</item>
+    </functions>
+
+    <translations>
+        <item for="install" lang="en">vendor_payouts.po</item>
+    </translations>
+</addon> 

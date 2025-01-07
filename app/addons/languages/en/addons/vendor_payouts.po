@@ -1,0 +1,23 @@
+msgid "request_payout"
+msgstr "Request Payout"
+
+msgid "minimum_payout_amount"
+msgstr "Minimum payout amount"
+
+msgid "minimum_payout_amount_not_reached"
+msgstr "The requested amount is below the minimum payout amount"
+
+msgid "no_verified_bank_details"
+msgstr "You need to have at least one verified bank account to request payouts"
+
+msgid "payout_request_submitted"
+msgstr "Your payout request has been submitted successfully"
+
+msgid "verify_bank_details"
+msgstr "Verify Bank Details"
+
+msgid "verification_notes"
+msgstr "Verification Notes"
+
+msgid "bank_details_verification_updated"
+msgstr "Bank details verification status has been updated" 

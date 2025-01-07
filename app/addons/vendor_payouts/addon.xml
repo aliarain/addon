@@ -1,0 +1,243 @@
+<?xml version="1.0"?>
+<addon scheme="3.0">
+    <id>vendor_payouts</id>
+    <version>1.0</version>
+    <name>Vendor Payouts Management</name>
+    <description>
+        Advanced payout management system for multi-vendor marketplaces. Allows vendors to manage their bank details 
+        and request payouts securely. Administrators can verify bank details and process payouts with comprehensive 
+        tracking and reporting.
+    </description>
+    <priority>100</priority>
+    <position>0</position>
+    <status>active</status>
+    <has_icon>Y</has_icon>
+    <default_language>en</default_language>
+    <auto_install>MULTIVENDOR</auto_install>
+    
+    <authors>
+        <author>
+            <name>Marketplace Team</name>
+            <email>support@example.com</email>
+            <url>https://marketplace.cs-cart.com</url>
+        </author>
+    </authors>
+
+    <supplier>Marketplace</supplier>
+    <supplier_link>https://marketplace.cs-cart.com</supplier_link>
+
+    <compatibility>
+        <core_version>
+            <min>4.11.0</min>
+        </core_version>
+        <php_version>
+            <min>7.1.0</min>
+        </php_version>
+        <dependencies>
+            <multivendor/>
+        </dependencies>
+    </compatibility>
+
+    <settings edition_type="ROOT,MULTIVENDOR">
+        <sections>
+            <section id="general">
+                <name>General Settings</name>
+                <items>
+                    <item id="encryption_key">
+                        <name>Encryption Key</name>
+                        <type>text</type>
+                        <default_value></default_value>
+                        <tooltip>Used for encrypting sensitive bank details. Auto-generated if empty.</tooltip>
+                    </item>
+                    <item id="require_verification">
+                        <name>Require Bank Details Verification</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                        <tooltip>Vendors can only request payouts after their bank details are verified by admin</tooltip>
+                    </item>
+                    <item id="minimum_payout">
+                        <name>Minimum Payout Amount</name>
+                        <type>text</type>
+                        <default_value>100</default_value>
+                        <tooltip>Minimum amount that vendors can request for payout</tooltip>
+                    </item>
+                    <item id="auto_payout">
+                        <name>Enable Automatic Payouts</name>
+                        <type>checkbox</type>
+                        <default_value>N</default_value>
+                        <tooltip>Automatically process payouts when vendor balance reaches threshold</tooltip>
+                    </item>
+                </items>
+            </section>
+            
+            <section id="payout_rules">
+                <name>Payout Rules</name>
+                <items>
+                    <item id="payout_threshold">
+                        <name>Auto-Payout Threshold</name>
+                        <type>text</type>
+                        <default_value>1000</default_value>
+                        <tooltip>Balance amount that triggers automatic payout</tooltip>
+                    </item>
+                    <item id="processing_fee">
+                        <name>Processing Fee (%)</name>
+                        <type>text</type>
+                        <default_value>0</default_value>
+                        <tooltip>Fee charged for processing payouts</tooltip>
+                    </item>
+                    <item id="payout_schedule">
+                        <name>Payout Schedule</name>
+                        <type>selectbox</type>
+                        <default_value>manual</default_value>
+                        <variants>
+                            <item id="manual">Manual</item>
+                            <item id="daily">Daily</item>
+                            <item id="weekly">Weekly</item>
+                            <item id="monthly">Monthly</item>
+                        </variants>
+                        <tooltip>Schedule for processing automatic payouts</tooltip>
+                    </item>
+                </items>
+            </section>
+
+            <section id="notifications">
+                <name>Notification Settings</name>
+                <items>
+                    <item id="notify_admin">
+                        <name>Notify Admin on Payout Request</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="notify_vendor">
+                        <name>Notify Vendor on Status Change</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="reminder_days">
+                        <name>Reminder Days</name>
+                        <type>text</type>
+                        <default_value>3</default_value>
+                        <tooltip>Days before payout to send reminder</tooltip>
+                    </item>
+                </items>
+            </section>
+
+            <section id="security">
+                <name>Security Settings</name>
+                <items>
+                    <item id="max_attempts">
+                        <name>Maximum Failed Attempts</name>
+                        <type>text</type>
+                        <default_value>3</default_value>
+                        <tooltip>Maximum failed verification attempts before lockout</tooltip>
+                    </item>
+                    <item id="lockout_time">
+                        <name>Lockout Time (hours)</name>
+                        <type>text</type>
+                        <default_value>24</default_value>
+                    </item>
+                    <item id="require_2fa">
+                        <name>Require 2FA for Large Payouts</name>
+                        <type>checkbox</type>
+                        <default_value>Y</default_value>
+                    </item>
+                    <item id="large_payout_amount">
+                        <name>Large Payout Threshold</name>
+                        <type>text</type>
+                        <default_value>10000</default_value>
+                    </item>
+                </items>
+            </section>
+        </sections>
+    </settings>
+
+    <queries>
+        <!-- Bank Details Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:vendor_bank_details (
+                detail_id int(11) unsigned NOT NULL auto_increment,
+                vendor_id int(11) unsigned NOT NULL,
+                bank_name varchar(255) NOT NULL,
+                account_holder varchar(255) NOT NULL,
+                account_number varchar(255) NOT NULL,
+                swift_code varchar(50) NOT NULL,
+                iban varchar(50) DEFAULT NULL,
+                branch_name varchar(255) NOT NULL,
+                bank_address text NOT NULL,
+                status char(1) NOT NULL default 'P',
+                is_default char(1) NOT NULL default 'N',
+                created_at int(11) unsigned NOT NULL,
+                updated_at int(11) unsigned NOT NULL,
+                verified_at int(11) unsigned DEFAULT NULL,
+                verified_by int(11) unsigned DEFAULT NULL,
+                verification_notes text DEFAULT NULL,
+                failed_attempts int(11) DEFAULT 0,
+                last_attempt_at int(11) DEFAULT NULL,
+                document_path varchar(255) DEFAULT NULL,
+                PRIMARY KEY (detail_id),
+                KEY vendor_id (vendor_id),
+                KEY status (status)
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
+        <!-- Payouts Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:vendor_payouts (
+                payout_id int(11) unsigned NOT NULL auto_increment,
+                vendor_id int(11) unsigned NOT NULL,
+                bank_details_id int(11) unsigned NOT NULL,
+                payout_amount decimal(12,2) NOT NULL default '0.00',
+                processing_fee decimal(12,2) NOT NULL default '0.00',
+                net_amount decimal(12,2) NOT NULL default '0.00',
+                currency_code char(3) NOT NULL,
+                status char(1) NOT NULL default 'P',
+                notes text,
+                admin_notes text,
+                created_at int(11) unsigned NOT NULL,
+                processed_at int(11) unsigned DEFAULT NULL,
+                processed_by int(11) unsigned DEFAULT NULL,
+                transaction_id varchar(255) DEFAULT NULL,
+                requires_2fa char(1) NOT NULL default 'N',
+                verification_code varchar(6) DEFAULT NULL,
+                verification_sent_at int(11) DEFAULT NULL,
+                verification_attempts int(11) DEFAULT 0,
+                PRIMARY KEY (payout_id),
+                KEY vendor_id (vendor_id),
+                KEY status (status),
+                KEY bank_details_id (bank_details_id),
+                CONSTRAINT fk_bank_details 
+                    FOREIGN KEY (bank_details_id) 
+                    REFERENCES ?:vendor_bank_details(detail_id)
+                    ON DELETE RESTRICT
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
+        <!-- Payout History Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:vendor_payout_history (
+                history_id int(11) unsigned NOT NULL auto_increment,
+                payout_id int(11) unsigned NOT NULL,
+                status char(1) NOT NULL,
+                notes text,
+                user_id int(11) unsigned NOT NULL,
+                timestamp int(11) unsigned NOT NULL,
+                PRIMARY KEY (history_id),
+                KEY payout_id (payout_id)
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
+        <!-- Cleanup on uninstall -->
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_payout_history;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_payouts;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_bank_details;</item>
+    </queries>
+
+    <functions>
+        <item for="install">fn_vendor_payouts_install</item>
+        <item for="uninstall">fn_vendor_payouts_uninstall</item>
+    </functions>
+
+    <translations>
+        <item for="install" lang="en">vendor_payouts.po</item>
+    </translations>
+</addon> 
