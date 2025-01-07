@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
 <addon scheme="3.0">
-    <id>vendor_payouts</id>
+    <id>zatesystem_vendor_payout</id>
     <version>1.0</version>
     <priority>100</priority>
     <position>0</position>
     <status>active</status>
     <has_icon>Y</has_icon>
     <default_language>en</default_language>
-    <auto_install>MULTIVENDOR</auto_install>
     
     <settings>
         <sections>
@@ -29,50 +28,15 @@
                         <type>checkbox</type>
                         <default_value>N</default_value>
                     </item>
-                </items>
-            </section>
-            <section id="payout_rules">
-                <name>Payout Rules</name>
-                <items>
-                    <item id="minimum_balance">
-                        <name>Minimum balance required</name>
-                        <type>text</type>
-                        <default_value>0.00</default_value>
-                    </item>
-                    <item id="grace_period_days">
-                        <name>Grace period (days)</name>
-                        <type>text</type>
-                        <default_value>7</default_value>
-                    </item>
-                    <item id="tax_type">
-                        <name>Tax type</name>
-                        <type>selectbox</type>
-                        <default_value>VAT</default_value>
-                        <variants>
-                            <item id="VAT">VAT</item>
-                            <item id="GST">GST</item>
-                            <item id="CUSTOM">Custom</item>
-                        </variants>
-                    </item>
-                </items>
-            </section>
-            <section id="suspension">
-                <name>Suspension Settings</name>
-                <items>
-                    <item id="hide_products">
-                        <name>Hide products of suspended vendors</name>
+                    <item id="require_2fa">
+                        <name>Require 2FA for Large Payouts</name>
                         <type>checkbox</type>
                         <default_value>Y</default_value>
                     </item>
-                    <item id="block_admin">
-                        <name>Block admin panel of suspended vendors</name>
-                        <type>checkbox</type>
-                        <default_value>Y</default_value>
-                    </item>
-                    <item id="disable_vendor">
-                        <name>Disable suspended vendors after grace period</name>
-                        <type>checkbox</type>
-                        <default_value>N</default_value>
+                    <item id="large_payout_amount">
+                        <name>Large Payout Threshold</name>
+                        <type>text</type>
+                        <default_value>10000</default_value>
                     </item>
                 </items>
             </section>
@@ -82,7 +46,7 @@
     <queries>
         <!-- Bank Details Table -->
         <item for="install">
-            CREATE TABLE IF NOT EXISTS ?:vendor_bank_details (
+            CREATE TABLE IF NOT EXISTS ?:zatesystem_vendor_payout_bank_details (
                 detail_id int(11) unsigned NOT NULL auto_increment,
                 vendor_id int(11) unsigned NOT NULL,
                 bank_name varchar(255) NOT NULL,
@@ -107,7 +71,7 @@
 
         <!-- Payouts Table -->
         <item for="install">
-            CREATE TABLE IF NOT EXISTS ?:vendor_payouts (
+            CREATE TABLE IF NOT EXISTS ?:zatesystem_vendor_payout_main (
                 payout_id int(11) unsigned NOT NULL auto_increment,
                 vendor_id int(11) unsigned NOT NULL,
                 bank_details_id int(11) unsigned NOT NULL,
@@ -121,24 +85,73 @@
                 KEY vendor_id (vendor_id),
                 KEY status (status),
                 KEY bank_details_id (bank_details_id),
-                CONSTRAINT fk_bank_details 
+                CONSTRAINT fk_zatesystem_bank_details 
                     FOREIGN KEY (bank_details_id) 
-                    REFERENCES ?:vendor_bank_details(detail_id)
+                    REFERENCES ?:zatesystem_vendor_payout_bank_details(detail_id)
                     ON DELETE RESTRICT
             ) Engine=InnoDB DEFAULT CHARSET UTF8;
         </item>
 
+        <!-- Payout History Table -->
+        <item for="install">
+            CREATE TABLE IF NOT EXISTS ?:zatesystem_vendor_payout_history (
+                history_id int(11) unsigned NOT NULL auto_increment,
+                payout_id int(11) unsigned NOT NULL,
+                status char(1) NOT NULL,
+                notes text,
+                user_id int(11) unsigned NOT NULL,
+                timestamp int(11) unsigned NOT NULL,
+                PRIMARY KEY (history_id),
+                KEY payout_id (payout_id)
+            ) Engine=InnoDB DEFAULT CHARSET UTF8;
+        </item>
+
         <!-- Cleanup on uninstall -->
-        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_payouts;</item>
-        <item for="uninstall">DROP TABLE IF EXISTS ?:vendor_bank_details;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:zatesystem_vendor_payout_history;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:zatesystem_vendor_payout_main;</item>
+        <item for="uninstall">DROP TABLE IF EXISTS ?:zatesystem_vendor_payout_bank_details;</item>
     </queries>
 
     <functions>
-        <item for="install">fn_vendor_payouts_install</item>
-        <item for="uninstall">fn_vendor_payouts_uninstall</item>
+        <item for="install">fn_zatesystem_vendor_payout_install</item>
+        <item for="uninstall">fn_zatesystem_vendor_payout_uninstall</item>
     </functions>
 
-    <translations>
-        <item for="install" lang="en">vendor_payouts.po</item>
-    </translations>
+    <!-- Menu Schema -->
+    <menu>
+        <item id="zatesystem_vendor_payout">
+            <item_id>zatesystem_vendor_payout</item_id>
+            <parent_id>vendors</parent_id>
+            <position>900</position>
+            <href>zatesystem_vendor_payout.manage</href>
+            <subitems>
+                <item>
+                    <item_id>manage_payouts</item_id>
+                    <href>zatesystem_vendor_payout.manage</href>
+                    <position>100</position>
+                </item>
+                <item>
+                    <item_id>bank_details</item_id>
+                    <href>zatesystem_bank_details.manage</href>
+                    <position>200</position>
+                </item>
+            </subitems>
+        </item>
+    </menu>
+
+    <!-- Balance Calculation Schema -->
+    <balance_calculation>
+        <order_commission>
+            <type>plus</type>
+            <callback>fn_zatesystem_vendor_payout_get_order_commission</callback>
+        </order_commission>
+        <payouts>
+            <type>minus</type>
+            <callback>fn_zatesystem_vendor_payout_get_processed_payouts</callback>
+        </payouts>
+        <refunds>
+            <type>minus</type>
+            <callback>fn_zatesystem_vendor_payout_get_refunds</callback>
+        </refunds>
+    </balance_calculation>
 </addon> 
