@@ -1,0 +1,16 @@
+msgid ""
+msgstr "Project-Id-Version: cs-cart-latest\n"
+
+msgctxt "Languages::vendor_payouts"
+msgid "Vendor Payouts"
+msgstr "Vendor Payouts"
+
+msgctxt "Languages::bank_account_details"
+msgid "Bank Account Details"
+msgstr "Bank Account Details"
+
+msgctxt "Languages::account_holder_name"
+msgid "Account Holder Name"
+msgstr "Account Holder Name"
+
+# Add other language strings 

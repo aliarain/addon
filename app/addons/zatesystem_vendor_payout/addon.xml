@@ -43,6 +43,26 @@
         </sections>
     </settings>
 
+    <languages>
+        <item for="install">
+            <translations>
+                <item lang="en">
+                    <var>vendor_payouts</var>
+                    <value>Vendor Payouts</value>
+                </item>
+                <item lang="en">
+                    <var>bank_account_details</var>
+                    <value>Bank Account Details</value>
+                </item>
+                <item lang="en">
+                    <var>account_holder_name</var>
+                    <value>Account Holder Name</value>
+                </item>
+                <!-- Add other language variables -->
+            </translations>
+        </item>
+    </languages>
+
     <queries>
         <!-- Bank Details Table -->
         <item for="install">
@@ -119,20 +139,23 @@
 
     <!-- Menu Schema -->
     <menu>
-        <item id="zatesystem_vendor_payout">
+        <item>
             <item_id>zatesystem_vendor_payout</item_id>
             <parent_id>vendors</parent_id>
             <position>900</position>
             <href>zatesystem_vendor_payout.manage</href>
+            <title>Vendor Payouts</title>
             <subitems>
                 <item>
                     <item_id>manage_payouts</item_id>
                     <href>zatesystem_vendor_payout.manage</href>
+                    <title>Manage Payouts</title>
                     <position>100</position>
                 </item>
                 <item>
                     <item_id>bank_details</item_id>
-                    <href>zatesystem_bank_details.manage</href>
+                    <href>zatesystem_vendor_payout.bank_details</href>
+                    <title>Bank Details</title>
                     <position>200</position>
                 </item>
             </subitems>
